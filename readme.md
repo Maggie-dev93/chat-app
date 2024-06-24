@@ -1,7 +1,7 @@
 # Chat App
 
 ## Objective
-s
+
 The goal of this project is to develop a chat application for mobile devices using React Native. The app will offer users a chat interface with features to share images and their location.
 
 ## Technologies Used
