@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { Alert } from 'react-native'; // Import Alert from react-native
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { initializeApp } from 'firebase/app';
@@ -23,13 +24,18 @@ const Stack = createNativeStackNavigator();
 
 const App = () => {
   const connectionStatus = useNetInfo();
+  const hasCheckedConnection = useRef(false);
 
   useEffect(() => {
     if (connectionStatus.isConnected) {
       enableNetwork(db);
     } else {
       disableNetwork(db);
+      if (hasCheckedConnection.current) {
+        Alert.alert("Offline", "You are currently offline."); // Show alert when offline
+      }
     }
+    hasCheckedConnection.current = true;
   }, [connectionStatus.isConnected]);
 
   return (

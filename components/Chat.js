@@ -1,16 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Platform, KeyboardAvoidingView, Alert } from 'react-native';
+import { StyleSheet, View, Platform, KeyboardAvoidingView } from 'react-native';
 import { Bubble, GiftedChat, InputToolbar } from "react-native-gifted-chat";
 import { onSnapshot, query, orderBy, collection, addDoc } from "firebase/firestore";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNetInfo } from '@react-native-community/netinfo'; // Import useNetInfo
 
-const Chat = ({ db, route, navigation }) => {
+const Chat = ({ db, route, navigation, isConnected }) => {
   const { userID, name, background } = route.params;
 
   const [messages, setMessages] = useState([]);
-  const [isConnected, setIsConnected] = useState(true); // Default to true when component mounts
-  const connectionStatus = useNetInfo(); // Get connection status
 
   const onSend = async (newMessages = []) => {
     const newMessage = newMessages[0];
@@ -51,23 +48,11 @@ const Chat = ({ db, route, navigation }) => {
   };
 
   useEffect(() => {
-    setIsConnected(connectionStatus.isConnected); // Update isConnected state based on connectionStatus
-  }, [connectionStatus.isConnected]);
-
-  useEffect(() => {
-    // Show alert only when isConnected changes to false (offline)
-    if (isConnected === false) {
-      Alert.alert("Offline", "You are currently offline.");
-    }
-  }, [isConnected]);
-  
-
-  useEffect(() => {
     const fetchMessages = async () => {
       if (isConnected) {
         const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
 
-        const unsubMessages = onSnapshot(q, (documentsSnapshot) => {
+        const unsubMessages = onSnapshot(q, async (documentsSnapshot) => {
           let newMessages = [];
           documentsSnapshot.forEach((doc) => {
             newMessages.push({
@@ -79,7 +64,11 @@ const Chat = ({ db, route, navigation }) => {
           setMessages(newMessages);
 
           // Cache messages locally
-          AsyncStorage.setItem('messages', JSON.stringify(newMessages));
+          try {
+            await AsyncStorage.setItem('messages', JSON.stringify(newMessages));
+          } catch (error) {
+            console.error("Error saving messages to AsyncStorage:", error);
+          }
         });
 
         return () => {
@@ -99,13 +88,11 @@ const Chat = ({ db, route, navigation }) => {
     };
 
     fetchMessages();
-  }, [isConnected]); // Trigger fetchMessages when isConnected changes
+  }, [isConnected, db]); // Trigger fetchMessages when isConnected or db changes
 
   useEffect(() => {
     navigation.setOptions({ title: name });
   }, [navigation, name]);
-
-
 
   return (
     <View style={[styles.container, { backgroundColor: background }]}>
