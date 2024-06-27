@@ -1,14 +1,13 @@
-// import the screens
-import Start from './components/Start';
-import Chat from './components/Chat';
-// import react Navigation
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-// import Firebase
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, disableNetwork, enableNetwork } from 'firebase/firestore';
+import { useNetInfo } from '@react-native-community/netinfo';
 
-// Your web app's Firebase configuration
+import Start from './components/Start';
+import Chat from './components/Chat';
+
 const firebaseConfig = {
   apiKey: "AIzaSyD1p55YjYeFiU6KGQ8M95Wowmkzv2Mrm5k",
   authDomain: "chat-app-f2aed.firebaseapp.com",
@@ -18,25 +17,30 @@ const firebaseConfig = {
   appId: "1:1088139980915:web:e9ad28c6b1977233a43a06"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-// Initialize Cloud Firestore and get a reference to the service
 const db = getFirestore(app);
-
-// Create the navigator
 const Stack = createNativeStackNavigator();
 
 const App = () => {
+  const connectionStatus = useNetInfo();
+
+  useEffect(() => {
+    if (connectionStatus.isConnected) {
+      enableNetwork(db);
+    } else {
+      disableNetwork(db);
+    }
+  }, [connectionStatus.isConnected]);
+
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Start">
         <Stack.Screen
           name="Start"
           component={Start}
-          initialParams={{ db }} // Pass db to the Start screen
         />
         <Stack.Screen name="Chat">
-          {(props) => <Chat {...props} db={db} />}
+          {props => <Chat isConnected={connectionStatus.isConnected} db={db} {...props} />}
         </Stack.Screen>
       </Stack.Navigator>
     </NavigationContainer>
